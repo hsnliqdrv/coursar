@@ -19,6 +19,7 @@ function addLoading(elem) {
     elem.innerHTML+=loadingImg;
 }
 
+
 function removeLoading(elem) {
     activate(elem);
     elem.querySelector(".loading").remove()
