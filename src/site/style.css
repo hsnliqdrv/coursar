@@ -1,0 +1,121 @@
+#app {
+    text-align: center;
+}
+#navbar {
+    text-align: center;
+    margin: 20px;
+}
+#navbar button {
+    width: 200px;
+    height: 40px;
+    font-size: 20px;
+}
+#list {
+    vertical-align: top;
+    display: inline-block;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid black;
+    width: 20%;
+    padding: 3px;
+    position: relative;
+    height:500px;
+    overflow-y:scroll;
+    margin:5px;
+}
+
+#list .elem:hover {
+    background-color: rgb(168, 168, 168);
+}
+
+#list .elem {
+    overflow:scroll;
+    padding: 5px;
+}
+#list .elem .title {
+    pointer-events:none;
+    user-select: none;
+}
+#list .elem .info:hover {
+    background-color: rgb(77, 77, 77);
+}
+#list .elem .info {
+    float:right;
+    vertical-align: top;
+    border-style:none;
+    background-color: transparent;
+    background-size: cover;
+    background-repeat: no-repeat;
+    display:inline ;
+    width:20px;
+    height:20px;
+    background-image: url("right-arrow.png");
+}
+#context-menu {
+    border: 1px solid black;
+    padding: 5px;
+}
+#action-menu {
+    vertical-align: top;
+    padding: 10px;
+    max-height: 500px;
+    display: inline-block;
+    width: 500px;
+    border: 1px solid black;
+}
+
+.loading {
+    width: 40px;
+    height: 40px;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    position: absolute;
+}
+
+.close {
+    float:left;
+}
+
+.change {
+    display: block;
+}
+
+#form {
+    vertical-align: top;
+    display: inline-block;
+    margin-top: 20px;
+    margin-left: auto;
+    margin-right: auto;
+    border: 1px solid black;
+    width: 40%;
+    padding: 10px;
+    position: relative;
+    height:500px;
+    overflow-y:scroll;
+    margin:5px;
+}
+
+#popup {
+    background-color:white;
+    position: absolute;
+    text-align: center;
+    border:1px solid black;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%,-50%);
+    width: 30%;
+    padding: 10px
+}
+
+#form .file #data {
+    width: 160px;
+    height: 120px;
+}
+
+#form > div {
+    padding: 5px;
+    margin: 20px;
+    border: 1px solid black;
+}

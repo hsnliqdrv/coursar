@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+        <script>
+            var lessons,contests;
+            fetch("/lessons.json")
+            .then(res => res.json())
+            .then(json => {
+                lessons=json;
+                fetch("/contests.json")
+                .then(res => res.json())
+                .then(json => {contests=json;run()})
+                .catch(err => {console.log(err)});
+            })
+            .catch(err => {console.log(err)});
+        </script>
+    </head>
+    <body>
+        <div id="app">
+            <h2>Lessons:</h2> 
+            <div id="lessons">
+                Show:
+                <select id="show">
+                    <option value="0">All</option>
+                    <option value="1">Unfinished</option>
+                    <option value="2">Finished</option>
+                </select>
+                <div id="lesson-list"></div>
+                
+            </div>
+
+            <h2>Contests:</h2>
+            <div id="contests">
+                <div id="contest-list"></div>
+            </div>
+        </div>
+        <div id="popup"></div>
+        <script src="script.js"></script>
+    </body>
+</html>

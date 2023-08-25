@@ -1,0 +1,5 @@
+{
+    "text":["title","name","mail","option","quest"],
+    "file":["video","thumbnail"],
+    "number":["points"]
+}
