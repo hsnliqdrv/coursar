@@ -1,2 +1,2 @@
-# edtech
+# coursar
 Coursing site.
