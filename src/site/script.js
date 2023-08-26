@@ -1,6 +1,7 @@
 const loadingImg=`<img src="loading-gif.gif" class="loading">`;
 var blobs=[];
 var types;
+
 addLoading(document.getElementById("app"));
 window.onload = () => {
     fetch("types.json")
