@@ -162,6 +162,10 @@ var form = {
             let data = type=="file"?inp.files[0]:inp.value;
             target.parentNode.replaceChild(form.valueHolder({data,type,key}),target);
             hidePopup();
+            if (!form.modified) {
+                form.modified=new Object();
+            };
+            form.modified[key]=data;
             document.getElementById("submit").disabled=false;
         };
         openPopup([input,button],capitalize(key));
@@ -214,6 +218,7 @@ var form = {
             li.appendChild(holder);
             list.appendChild(li);
         });
+        return list;
     },
     objectHolder: ({object}) => {
         let obj=document.createElement("UL");
@@ -223,14 +228,25 @@ var form = {
             li.appendChild(holder);
             obj.appendChild(li);
         });
+        return obj;
     },
     new: props => {
         let div = document.createElement("div");
         div.id="form";
         props.values.map(val => {
             let div = document.createElement("div");
-            div.className=val.type;
-            let value = form.valueHolder(val);
+            let value;
+            if (val.data instanceof Array) {
+                value=form.arrayHolder({array:val.data,key:val.key});
+                div.className="array";
+            } else if (val.data instanceof Object && 
+                        !val.data instanceof File) {
+                            value=form.objectHolder({object:val.data});
+                            div.className="object"
+                        } else {
+                value = form.valueHolder(val);
+                div.className=val.type;
+            };
             div.appendChild(value);
             return div;
         }).forEach(childDiv => div.appendChild(childDiv));
@@ -264,8 +280,8 @@ const markCb = data => {
                 let fileName=element[key].split("/").pop();
                 element[key]=new File([buffer],fileName);
             });
-        };
-    });URL
+        }
+    });
     elements[ind]=element;
     });
     app.querySelector("#body").appendChild(list());
@@ -287,6 +303,7 @@ function mark(i) {
     }
     marked=document.getElementById("navbar").children[i];
     marked.disabled=true;
+    console.log("mark");
 };
 
 function unmark() {
@@ -358,10 +375,10 @@ function fetchLessons(cb) {
     //apireq("get",{target:"lessons"},cb);
     cb({elements:[{"id":"1","title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
     "video":"public/video/lesson1.mp4",
-    "questions":"public/questions/lesson1.json"},
-    {"id":"2","title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
+    "questions":""},
+    {"id":"2","title":"The First Lesson","thumbnail":"https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072821_960_720.jpg",
     "video":"public/video/lesson1.mp4",
-    "questions":"public/questions/lesson1.json"}]});
+    "questions":""}]});
 };
 function fetchContests(cb) {
     //apireq("get",{target:"contests"},cb);
