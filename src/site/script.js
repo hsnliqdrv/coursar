@@ -1,3 +1,6 @@
+// Handle change of array's and object's elements
+// Wait while markCb loads files
+
 const loadingImg=`<img src="loading-gif.gif" class="loading">`;
 var blobs=[];
 var types;
@@ -41,34 +44,19 @@ function deactivate(elem) {
     });
 }
 
-function apiupload(files,cb) {
-    let data = new FormData();
-    new Array(...files).forEach(file => {
-        data.append(file.name,file);
-    });
-    console.log(data);
-    fetch("/api/upload",{
-        method:"POST",
-        body:data
-    })
-    .then(res=>res.json())
-    .then(data=>cb(data))
-    .catch(err=>console.log(err));
-}
-
 function apireq(command,data,cb) {
+    let body=new FormData();
+    Object.keys(data).forEach(key => {
+        body.append(key,data[key])
+    });
     fetch(`/api/${command}`,{
-        method:"POST",
-        headers: {
-            "Content-Type":"application/json"
-        },
-        body: JSON.stringify(data)
+        method:"POST",body
     })
     .then(res => res.json())
     .then(data => cb(data))
     .catch(err => {});
-}
-types
+};
+
 var sections = new Array(...document.getElementById("navbar")
                 .children).map(e => e.innerHTML);
 
@@ -254,6 +242,19 @@ var form = {
         button.id="submit";
         button.innerHTML="Submit";
         button.disabled=true;
+        button.onclick=() => {
+            let data = elements[selectedElemId];
+            Object.keys(data).forEach(key => {
+                let modified=form.modified[key];
+                if (modified) {
+                    data[key]=modified;
+                };
+            });
+            elements[selectedElemId]=data;
+            apireq("set",{target:{
+                type:marked.innerHTML.toLowerCase(),id:selectedElemId
+            },data},res => console.log(res));
+        };
         div.appendChild(button);
         return div;
     },
@@ -269,20 +270,23 @@ prompt=form.prompt;
 var elements;
 
 const markCb = data => {
+    addLoading(app);
     elements=data.elements;
     elements.forEach(element => {
-    let ind=elements.indexOf(element);
-    Object.keys(element).forEach(key => {
-        if (type(key) == "file") {
+        addLoading(app);
+        let ind=elements.indexOf(element);
+        let files=Object.keys(element).filter(k => type(k) == "file");
+        for (let i = 0; i < files.length; i++){
+            let key = files[i];
             fetch(element[key])
             .then(res=>res.arrayBuffer())
             .then(buffer=>{
                 let fileName=element[key].split("/").pop();
                 element[key]=new File([buffer],fileName);
+                removeLoading(app);
             });
-        }
-    });
-    elements[ind]=element;
+        };
+        elements[ind]=element;
     });
     app.querySelector("#body").appendChild(list());
     elements.map(e => listElem(e)).forEach(e => {
@@ -301,9 +305,6 @@ function mark(i) {
     } else {
         fetchUsers(markCb);
     }
-    marked=document.getElementById("navbar").children[i];
-    marked.disabled=true;
-    console.log("mark");
 };
 
 function unmark() {
