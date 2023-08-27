@@ -1,31 +1,36 @@
 // Handle change of array's and object's elements
-// Wait while markCb loads files
-
-const loadingImg=`<img src="loading-gif.gif" class="loading">`;
 var blobs=[];
 var types;
+var app;
 
-addLoading(document.getElementById("app"));
+function loadingImg() {
+    let img=document.createElement("IMG");
+    img.src="loading-gif.gif";
+    img.className="loading";
+    return img;
+};
+
 window.onload = () => {
+    app=document.getElementById("app");
+    addLoading(app);
     fetch("types.json")
     .then(res => {if (res.ok) return res.json();})
     .then(data => {types=data;init()});
 }
 
 function init() {
-    var app = document.getElementById("app");
     removeLoading(app);
     mark(0);
 }
 
 function addLoading(elem) {
     deactivate(elem);
-    elem.innerHTML+=loadingImg;
+    elem.appendChild(loadingImg());
 }
 
 function removeLoading(elem) {
     activate(elem);
-    elem.querySelector(".loading").remove()
+    elem.querySelector(".loading").remove();
 }
 
 function activate(elem) {
@@ -273,19 +278,20 @@ const markCb = data => {
     addLoading(app);
     elements=data.elements;
     elements.forEach(element => {
-        addLoading(app);
         let ind=elements.indexOf(element);
-        let files=Object.keys(element).filter(k => type(k) == "file");
-        for (let i = 0; i < files.length; i++){
-            let key = files[i];
-            fetch(element[key])
-            .then(res=>res.arrayBuffer())
-            .then(buffer=>{
-                let fileName=element[key].split("/").pop();
-                element[key]=new File([buffer],fileName);
-                removeLoading(app);
-            });
+        let fileKeys=Object.keys(element).filter(k => type(k) == "file");
+        let fileUrls=fileKeys.map(f => element[f]);
+        if (fileUrls.length == 0) {
+            removeLoading(app);
         };
+        load(fileUrls,(id,buffer)=>{
+            let key = fileKeys[id];
+            let fileName=element[key].split("/").pop();
+            element[key]=new File([buffer],fileName);
+            if (id == fileKeys.length-1 && elements.indexOf(element) == elements.length-1) {
+                removeLoading(app);
+            };
+        });
         elements[ind]=element;
     });
     app.querySelector("#body").appendChild(list());
@@ -294,6 +300,14 @@ const markCb = data => {
     });
 };
 
+function load(files,perCb) {
+    files.forEach(file => {
+        fetch(file)
+        .then(res=>res.arrayBuffer())
+        .then(data=>perCb(files.indexOf(file),data));
+    });
+}
+var marked;
 function mark(i) {
     if (marked) {
         unmark();
@@ -305,6 +319,8 @@ function mark(i) {
     } else {
         fetchUsers(markCb);
     }
+    marked=app.querySelector("#navbar").children[i];
+    marked.disabled=true;
 };
 
 function unmark() {
