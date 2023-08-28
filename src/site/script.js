@@ -130,8 +130,12 @@ function capitalize(s) {
 
 const br=document.createElement("BR");
 
+const arrayKeys = {
+    "questions":"question"
+};
+
 var form = {
-    prompt: ({type,key,target}) => {
+    prompt: ({type,path,key,target},title) => {
         let input=document.createElement("input"),
             button=document.createElement("button");
         button.innerHTML="Submit";
@@ -147,23 +151,23 @@ var form = {
         } else if (type == "text") {
             if (key=="mail") {
                 input.type="email";
-            }
+            };
         };
         button.onclick = e => {
             e.preventDefault();
             let inp = e.target.parentNode.querySelector("input");
             let data = type=="file"?inp.files[0]:inp.value;
-            target.parentNode.replaceChild(form.valueHolder({data,type,key}),target);
+            target.parentNode.replaceChild(form.valueHolder({data,type,key},path.slice(0,path.length-1)),target);
             hidePopup();
-            if (!form.modified) {
-                form.modified=new Object();
-            };
-            form.modified[key]=data;
+            form.modified=nestedSet(form.modified,path,data);
             document.getElementById("submit").disabled=false;
         };
-        openPopup([input,button],capitalize(key));
+        openPopup([input,button],capitalize(title));
     },
-    valueHolder: ({data,type,key}) => {
+    valueHolder: ({data,type,key,index},parentPath) => {
+        let path=parentPath;
+        path.push(index?index:key);
+        console.log(path)
         let div=document.createElement("DIV");
         div.className="value";
         div.id=key;
@@ -195,7 +199,7 @@ var form = {
             button.className="change";
             button.innerHTML="change";
             button.onclick = e => {
-                prompt({type,key,target:div});
+                prompt({type,path,key,target:div},key);
             };
         div.appendChild(label);
         div.appendChild(value);
@@ -203,59 +207,60 @@ var form = {
         div.appendChild(button);
         return div;
     },
-    arrayHolder: ({array,key}) => {
+    arrayHolder: ({array,key,index},arrayKey,parentPath) => {
+        let path=parentPath;
+        path.push(index?index:arrayKey);
+        console.log(path)
         let list=document.createElement("OL");
         array.forEach(elem => {
-            let holder=form.valueHolder({data:elem,type:type(key),key});
+            let holder=form.holder({data:elem,parentPath:path,type:type(key),key,
+                index:array.indexOf(elem)},path);
             let li=document.createElement("LI");
             li.appendChild(holder);
             list.appendChild(li);
         });
         return list;
     },
-    objectHolder: ({object}) => {
+    objectHolder: ({object,index},objectKey,parentPath) => {
+        let path=parentPath;
+        path.push(index?index:objectKey);
+        console.log(path)
         let obj=document.createElement("UL");
         Object.keys(object).forEach(key => {
-            let holder=form.valueHolder({data:object[key],type:type(key),key});
+            let holder=form.holder({data:object[key],type:type(key),key},path);
             let li=document.createElement("LI");
             li.appendChild(holder);
             obj.appendChild(li);
         });
         return obj;
     },
+    holder: (val,path) => {
+        let div = document.createElement("div");
+        let value;
+        if (val.data instanceof Array) {
+            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},val.key,path);
+            div.className="array";
+        } else if (val.data instanceof Object && 
+                    !val.data instanceof File) {
+                        value=form.objectHolder({object:val.data,index:val.index},val.key,path);
+                        div.className="object"
+                    } else {
+            value = form.valueHolder(val,path);
+            div.className=val.type;
+        };
+        div.appendChild(value);
+        return div;
+    },
     new: props => {
         let div = document.createElement("div");
         div.id="form";
-        props.values.map(val => {
-            let div = document.createElement("div");
-            let value;
-            if (val.data instanceof Array) {
-                value=form.arrayHolder({array:val.data,key:val.key});
-                div.className="array";
-            } else if (val.data instanceof Object && 
-                        !val.data instanceof File) {
-                            value=form.objectHolder({object:val.data});
-                            div.className="object"
-                        } else {
-                value = form.valueHolder(val);
-                div.className=val.type;
-            };
-            div.appendChild(value);
-            return div;
-        }).forEach(childDiv => div.appendChild(childDiv));
+        props.values.map(val => form.holder(val,[])).forEach(childDiv => div.appendChild(childDiv));
         let button = document.createElement("BUTTON");
         button.id="submit";
         button.innerHTML="Submit";
         button.disabled=true;
         button.onclick=() => {
-            let data = elements[selectedElemId];
-            Object.keys(data).forEach(key => {
-                let modified=form.modified[key];
-                if (modified) {
-                    data[key]=modified;
-                };
-            });
-            elements[selectedElemId]=data;
+            elements[selectedElemId]=form.modified;
             apireq("set",{target:{
                 type:marked.innerHTML.toLowerCase(),id:selectedElemId
             },data},res => console.log(res));
@@ -267,8 +272,19 @@ var form = {
         let o = document.getElementById("form");
         if (o) o.remove();
         form.open=false;
+        form.modified=null;
     }
 };
+
+function nestedSet(obj,path,value) {
+    console.log(path);
+    if (path.length == 1) {
+        obj[path[0]]=value;
+    } else if (path.length > 1) {
+        obj[path[0]]=nestedSet(obj[path[0]],path.slice(1),value);
+    };
+    return obj;
+}
 
 prompt=form.prompt;
 
@@ -355,6 +371,7 @@ function infoBtn() {
         e.stopPropagation();
         if (form.open) return;
         let obj = elements.filter(e=> e.id==selectedElem.id)[0]
+        form.modified=obj;
         app.querySelector("#body").appendChild(form.new({
             values:Object.keys(obj).slice(1).map(key => {
                 return {
@@ -390,12 +407,13 @@ function fetchUsers(cb) {
 };
 function fetchLessons(cb) {
     //apireq("get",{target:"lessons"},cb);
+    let obj=[{"quest":"What's your name?","options":["Jack","Jay","John"]},{"quest":"What's your name?","options":["Jack","Jay","John"]}];
     cb({elements:[{"id":"1","title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
     "video":"public/video/lesson1.mp4",
-    "questions":""},
+    "questions":obj},
     {"id":"2","title":"The First Lesson","thumbnail":"https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072821_960_720.jpg",
     "video":"public/video/lesson1.mp4",
-    "questions":""}]});
+    "questions":obj}]});
 };
 function fetchContests(cb) {
     //apireq("get",{target:"contests"},cb);
