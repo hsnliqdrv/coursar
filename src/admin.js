@@ -15,7 +15,7 @@ const static="./site";
 const uploadDir=static+"/upload";
 
 app.use(express.static(static));
-app.use(bp.json())
+app.use(bp.json());
 app.use(bp.urlencoded({extended:true}))
 
 app.post('/api/:command', upload.any(),(req, res) => {
