@@ -36,7 +36,7 @@ app.post('/api/:command', upload.any(),(req, res) => {
             ret.success=true;
             resData=ret;
         } else {
-            resData={success:false}
+            resData={success:false};
         }
     } else if (cmd == "set") {
         let ret;
