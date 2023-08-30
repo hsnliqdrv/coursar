@@ -188,6 +188,8 @@ var form = {
             let par = target.querySelector("#data");
             par.parentNode.replaceChild(form.valueElem({data,type,key}),par);
 
+            target.history.push(data);
+
             form.modified=nestedSet(form.modified,path,data);
 
             document.getElementById("submit").disabled=false;
@@ -202,8 +204,15 @@ var form = {
             undo.className="undo";
             undo.onclick = e => {
                 let par=e.target.parentNode;
-                let prev=par.history[par.history.length-2];
-                par.replaceChild(form.valueElem({data:prev,type,key}),par.querySelector("#data"));
+                let len=par.history.length;
+                let prev=par.history[len-2];
+                par.replaceChild(form.valueElem({data:prev,type,key}),
+                    par.querySelector("#data"));
+                form.modified=nestedSet(form.modified,path,prev);
+                par.history=par.history.slice(0,len-1);
+                if (len == 2) {
+                    e.target.disabled=true;
+                };
             };
             undo.disabled=true;
         let change=document.createElement("BUTTON");
