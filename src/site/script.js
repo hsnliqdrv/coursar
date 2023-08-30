@@ -1,4 +1,3 @@
-// Handle change of array's and object's elements
 var blobs=[];
 var types;
 var app;
@@ -16,22 +15,22 @@ window.onload = () => {
     fetch("types.json")
     .then(res => {if (res.ok) return res.json();})
     .then(data => {types=data;init()});
-}
+};
 
 function init() {
     removeLoading(app);
     mark(0);
-}
+};
 
 function addLoading(elem) {
     deactivate(elem);
     elem.appendChild(loadingImg());
-}
+};
 
 function removeLoading(elem) {
     activate(elem);
     elem.querySelector(".loading").remove();
-}
+};
 
 function activate(elem) {
     elem.style.pointerEvents="";
@@ -39,7 +38,7 @@ function activate(elem) {
     Array(...elem.children).forEach(child => {
         child.style.filter="";
     });
-}
+};
 
 function deactivate(elem) {
     elem.style.pointerEvents="none";
@@ -47,7 +46,7 @@ function deactivate(elem) {
     Array(...elem.children).forEach(child => {
         child.style.filter="blur(10px)";
     });
-}
+};
 
 function apireq(command,data,cb) {
     let body=new FormData();
@@ -59,7 +58,7 @@ function apireq(command,data,cb) {
     })
     .then(res => res.json())
     .then(data => cb(data))
-    .catch(err => {});
+    .catch(err => cb({success:false,errorCode:0}));
 };
 
 var sections = new Array(...document.getElementById("navbar")
@@ -101,7 +100,6 @@ function list() {
 
 function openPopup(children,title="Pop Up") {
     let close=document.createElement("BUTTON");
-    close.innerHTML="CLOSE";
     close.className="close";
     close.onclick=() => {
         hidePopup();
@@ -131,7 +129,36 @@ function capitalize(s) {
 const br=document.createElement("BR");
 
 const arrayKeys = {
-    "questions":"question"
+    "questions":"question",
+    "options":"option"
+};
+
+const errorDesc = {
+    0:"Cannot connect to the server"
+};
+
+function showError(code) {
+    let desc=errorDesc[code];
+    if (!desc) {
+        desc="Unknown error";
+    }
+    let dt=document.createElement("H4");
+    dt.innerHTML="Description:";
+    let dp=document.createElement("P");
+    dp.style.color="red";
+    dp.innerHTML=desc;
+    openPopup([dt,dp],"Error");
+};
+
+function undoButton() {
+    let undo = document.createElement("BUTTON");
+    undo.className="undo";
+    undo.onclick = e => {
+        let par=e.target.parentNode;
+        let prev=par.history[par.history.length-2];
+        par.textContent="";
+        par.appendChild(form.holder(prev,par.path));
+    };
 };
 
 var form = {
@@ -157,22 +184,114 @@ var form = {
             e.preventDefault();
             let inp = e.target.parentNode.querySelector("input");
             let data = type=="file"?inp.files[0]:inp.value;
-            target.parentNode.replaceChild(form.valueHolder({data,type,key},path.slice(0,path.length-1)),target);
-            hidePopup();
+
+            let par = target.querySelector("#data");
+            par.parentNode.replaceChild(form.valueElem({data,type,key}),par);
+
             form.modified=nestedSet(form.modified,path,data);
+
             document.getElementById("submit").disabled=false;
+            target.querySelector(".undo").disabled=false;
+            hidePopup();
         };
         openPopup([input,button],capitalize(title));
     },
-    valueHolder: ({data,type,key,index},parentPath) => {
-        let path=parentPath;
-        path.push(index?index:key);
-        console.log(path)
-        let div=document.createElement("DIV");
-        div.className="value";
-        div.id=key;
-        let label = document.createElement("H3");
-        label.innerHTML=capitalize(key)+":";
+    valueHolder: ({data,type,key},path) => {
+        let value=form.valueElem({data,type,key});
+        let undo = document.createElement("BUTTON");
+            undo.className="undo";
+            undo.onclick = e => {
+                let par=e.target.parentNode;
+                let prev=par.history[par.history.length-2];
+                par.replaceChild(form.valueElem({data:prev,type,key}),par.querySelector("#data"));
+            };
+            undo.disabled=true;
+        let change=document.createElement("BUTTON");
+            change.className="change";
+            change.onclick = e => {
+                prompt({type,path,key,target:e.target.parentNode},key);
+            };
+        return [value,change,undo];
+    },
+    arrayHolder: ({array,key},arrayKey,path) => {
+        let list=document.createElement("OL");
+        array.forEach(elem => {
+            let ind=array.indexOf(elem).toString();
+            let childPath=[...path,ind];
+            let holder=form.holder({data:elem,type:type(key),key},childPath);
+            let li=document.createElement("LI");
+            li.appendChild(holder);
+            list.appendChild(li);
+        });
+        return [list];
+    },
+    objectHolder: ({object},objectKey,path) => {
+        //console.log(path);
+        let obj=document.createElement("UL");
+        Object.keys(object).forEach(key => {
+            let childPath = [...path,key];
+            let holder=form.holder({data:object[key],type:type(key),key},childPath);
+            let li=document.createElement("LI");
+            li.appendChild(holder);
+            obj.appendChild(li);
+        });
+        return [obj];
+    },
+    holder: (val,path) => {
+        let index=isNaN(path[path.length-1])?undefined:path[path.length-1];
+        let indent=path.length;
+        let label = document.createElement("H"+(indent<6?indent:6));
+        label.innerHTML=capitalize(val.key)+":";
+
+        let div = document.createElement("div");
+        let value;
+        if (val.data instanceof Array) {
+            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},val.key,path);
+            div.className="array";
+        } else if (val.data instanceof Object && !(val.data instanceof File)) {
+            value=form.objectHolder({object:val.data,index:val.index},val.key,path);
+            div.className="object";
+        } else {
+            value = form.valueHolder(val,path);
+            div.history = [val.data];
+            div.className=val.type;
+        };
+        label.innerHTML=capitalize(val.key)+(index?" "+index:"")+":";
+        div.appendChild(label);
+        value.forEach(elem => div.appendChild(elem));
+        return div;
+    },
+    new: props => {
+        let div = document.createElement("div");
+        div.id="form";
+        props.values.map(val => form.holder(val,[val.key])).forEach(childDiv => div.appendChild(childDiv));
+        let button = document.createElement("BUTTON");
+        button.id="submit";
+        button.innerHTML="Submit";
+        button.disabled=true;
+        button.onclick=() => {
+            addLoading(document.getElementById("form"));
+            apireq("set",{target:{
+                type:marked.innerHTML.toLowerCase(),id:selectedElemId
+            },data},res => {
+                if (res.success) {
+                    elements[selectedElemId]=form.modified;
+                } else {
+                    showError(res.errorCode);
+                };
+                removeLoading(document.getElementById("form"));
+            });
+        };
+        div.appendChild(button);
+        return div;
+    },
+    remove: () => {
+        let o = document.getElementById("form");
+        if (o) o.remove();
+        form.open=false;
+        form.modified=null;
+    },
+    valueElem: ({data,type,key}) => {
         let value;
         if (type == "file") {
             if (key == "video") {
@@ -181,7 +300,7 @@ var form = {
             } else if (key == "thumbnail") {
                 value=document.createElement("IMG");
                 value.src=URL.createObjectURL(data);
-            }
+            };
             blobs.push(value.src);
         } else if (type == "text") {
             value=document.createElement("SPAN");
@@ -193,91 +312,15 @@ var form = {
         } else {
             value=document.createElement("div");
             value.innerHTML=data;
-        }
+        };
         value.id="data";
-        let button=document.createElement("BUTTON");
-            button.className="change";
-            button.innerHTML="change";
-            button.onclick = e => {
-                prompt({type,path,key,target:div},key);
-            };
-        div.appendChild(label);
-        div.appendChild(value);
-        div.appendChild(br);
-        div.appendChild(button);
-        return div;
-    },
-    arrayHolder: ({array,key,index},arrayKey,parentPath) => {
-        let path=parentPath;
-        path.push(index?index:arrayKey);
-        console.log(path)
-        let list=document.createElement("OL");
-        array.forEach(elem => {
-            let holder=form.holder({data:elem,parentPath:path,type:type(key),key,
-                index:array.indexOf(elem)},path);
-            let li=document.createElement("LI");
-            li.appendChild(holder);
-            list.appendChild(li);
-        });
-        return list;
-    },
-    objectHolder: ({object,index},objectKey,parentPath) => {
-        let path=parentPath;
-        path.push(index?index:objectKey);
-        console.log(path)
-        let obj=document.createElement("UL");
-        Object.keys(object).forEach(key => {
-            let holder=form.holder({data:object[key],type:type(key),key},path);
-            let li=document.createElement("LI");
-            li.appendChild(holder);
-            obj.appendChild(li);
-        });
-        return obj;
-    },
-    holder: (val,path) => {
-        let div = document.createElement("div");
-        let value;
-        if (val.data instanceof Array) {
-            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},val.key,path);
-            div.className="array";
-        } else if (val.data instanceof Object && 
-                    !val.data instanceof File) {
-                        value=form.objectHolder({object:val.data,index:val.index},val.key,path);
-                        div.className="object"
-                    } else {
-            value = form.valueHolder(val,path);
-            div.className=val.type;
-        };
-        div.appendChild(value);
-        return div;
-    },
-    new: props => {
-        let div = document.createElement("div");
-        div.id="form";
-        props.values.map(val => form.holder(val,[])).forEach(childDiv => div.appendChild(childDiv));
-        let button = document.createElement("BUTTON");
-        button.id="submit";
-        button.innerHTML="Submit";
-        button.disabled=true;
-        button.onclick=() => {
-            elements[selectedElemId]=form.modified;
-            apireq("set",{target:{
-                type:marked.innerHTML.toLowerCase(),id:selectedElemId
-            },data},res => console.log(res));
-        };
-        div.appendChild(button);
-        return div;
-    },
-    remove: () => {
-        let o = document.getElementById("form");
-        if (o) o.remove();
-        form.open=false;
-        form.modified=null;
+        return value;
     }
 };
 
+
 function nestedSet(obj,path,value) {
-    console.log(path);
+    
     if (path.length == 1) {
         obj[path[0]]=value;
     } else if (path.length > 1) {

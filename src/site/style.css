@@ -75,11 +75,30 @@
 }
 
 .close {
-    float:left;
+    display: block;
+    background: url("close_btn.png");
+    background-size:cover;
+    width:20px;
+    height:20px;
+    border-style:none;
+    border-radius:10px
+}
+.close:hover {
+    background-color:gray;
 }
 
 .change {
-    display: block;
+    display: inline;
+    margin-left:5px;
+    background:url("edit_btn.png");
+    background-size:cover;
+    width:20px;
+    height:20px;
+    border-style:none;
+}
+
+.change:hover {
+    background-color:gray
 }
 
 #form {
@@ -118,4 +137,9 @@
     padding: 5px;
     margin: 20px;
     border: 1px solid black;
+}
+
+#form ul,ol {
+    list-style-type: none;
+    text-align:left;
 }
