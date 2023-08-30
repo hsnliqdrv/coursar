@@ -101,6 +101,20 @@
     background-color:gray
 }
 
+.undo {
+    display: inline;
+    margin-left:5px;
+    background:url("undo_btn.png");
+    background-size:cover;
+    width:20px;
+    height:20px;
+    border-style:none;
+}
+
+.undo:hover {
+    background-color:gray
+}
+
 #form {
     vertical-align: top;
     display: inline-block;
