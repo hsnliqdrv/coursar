@@ -10,6 +10,7 @@
     height: 40px;
     font-size: 20px;
 }
+
 #list {
     vertical-align: top;
     display: inline-block;
@@ -73,28 +74,35 @@
     transform: translate(-50%,-50%);
     position: absolute;
 }
-
-.close {
-    display: block;
-    background: url("close_btn.png");
+.undo,.change,.close,.expand {
+    display: inline;
+    margin-left:5px;
     background-size:cover;
+    background-color:transparent;
     width:20px;
     height:20px;
     border-style:none;
-    border-radius:10px
+}
+
+.undo,.change,.expand {
+    vertical-align:middle;
+}
+
+.expand:hover {
+    background-color: gray;
+}
+
+.close {
+    position: absolute;
+    display: block;
+    background-image: url("close_btn.png");
 }
 .close:hover {
     background-color:gray;
 }
 
 .change {
-    display: inline;
-    margin-left:5px;
-    background:url("edit_btn.png");
-    background-size:cover;
-    width:20px;
-    height:20px;
-    border-style:none;
+    background-image:url("edit_btn.png");
 }
 
 .change:hover {
@@ -102,17 +110,15 @@
 }
 
 .undo {
-    display: inline;
-    margin-left:5px;
-    background:url("undo_btn.png");
-    background-size:cover;
-    width:20px;
-    height:20px;
-    border-style:none;
+    background-image:url("undo_btn.png");
 }
 
 .undo:hover {
     background-color:gray
+}
+
+#popup :not(.close) {
+    margin: 5px;
 }
 
 #form {

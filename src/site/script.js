@@ -104,7 +104,7 @@ function openPopup(children,title="Pop Up") {
     close.onclick=() => {
         hidePopup();
     }
-    let h3 = document.createElement("H3");
+    let h3 = document.createElement("H2");
     h3.innerHTML=title;
     let div = document.createElement("div");
     div.id="popup";
@@ -150,25 +150,44 @@ function showError(code) {
     openPopup([dt,dp],"Error");
 };
 
-function undoButton() {
-    let undo = document.createElement("BUTTON");
-    undo.className="undo";
-    undo.onclick = e => {
-        let par=e.target.parentNode;
-        let prev=par.history[par.history.length-2];
-        par.textContent="";
-        par.appendChild(form.holder(prev,par.path));
+function expandBtn() {
+    let expand=document.createElement("BUTTON");
+    expand.className="expand";
+    expand.style.backgroundImage=`url("expand_btn.png")`;
+    expand.onclick = e => {
+        let expable=e.target.parentNode.nextSibling;
+        let expanded=expable.style.display=="";
+        if (expanded) {
+            expable.style.display="none";
+            expand.style.backgroundImage=`url("expand_btn.png")`;
+        } else {
+            expable.style.display="";
+            expand.style.backgroundImage=`url("collapse_btn.png")`;
+        };
     };
-};
+    return expand;
+}
 
 var form = {
+    defaults: {
+        "number":"0",
+        "text":"Enter text",
+        "file":{
+            "image":(
+                new File([""],"file")
+            ),
+            "video":(
+                new File([""],"file")
+            )
+        }
+    },
     prompt: ({type,path,key,target},title) => {
         let input=document.createElement("input"),
             button=document.createElement("button");
+        
         button.innerHTML="Submit";
         button.type="submit";
         input.type=type;
-        input.required=true;
         if (type == "file") {
             if (key == "thumbnail") {
                 input.accept="image/*";
@@ -176,13 +195,12 @@ var form = {
                 input.accept="video/*";
             };
         } else if (type == "text") {
-            if (key=="mail") {
-                input.type="email";
-            };
+            input=document.createElement("textarea");
         };
+        input.id="input";
         button.onclick = e => {
             e.preventDefault();
-            let inp = e.target.parentNode.querySelector("input");
+            let inp = e.target.parentNode.querySelector("#input");
             let data = type=="file"?inp.files[0]:inp.value;
 
             let par = target.querySelector("#data");
@@ -193,10 +211,10 @@ var form = {
             form.modified=nestedSet(form.modified,path,data);
 
             document.getElementById("submit").disabled=false;
-            target.querySelector(".undo").disabled=false;
+            target.querySelector(".undo").style.display="";
             hidePopup();
         };
-        openPopup([input,button],capitalize(title));
+        openPopup([input,br,button],capitalize(title));
     },
     valueHolder: ({data,type,key},path) => {
         let value=form.valueElem({data,type,key});
@@ -211,10 +229,10 @@ var form = {
                 form.modified=nestedSet(form.modified,path,prev);
                 par.history=par.history.slice(0,len-1);
                 if (len == 2) {
-                    e.target.disabled=true;
+                    undo.style.display="none";
                 };
             };
-            undo.disabled=true;
+            undo.style.display="none";
         let change=document.createElement("BUTTON");
             change.className="change";
             change.onclick = e => {
@@ -222,7 +240,7 @@ var form = {
             };
         return [value,change,undo];
     },
-    arrayHolder: ({array,key},arrayKey,path) => {
+    arrayHolder: ({array,key},path) => {
         let list=document.createElement("OL");
         array.forEach(elem => {
             let ind=array.indexOf(elem).toString();
@@ -234,7 +252,7 @@ var form = {
         });
         return [list];
     },
-    objectHolder: ({object},objectKey,path) => {
+    objectHolder: ({object},path) => {
         //console.log(path);
         let obj=document.createElement("UL");
         Object.keys(object).forEach(key => {
@@ -249,23 +267,25 @@ var form = {
     holder: (val,path) => {
         let index=isNaN(path[path.length-1])?undefined:path[path.length-1];
         let indent=path.length;
+        
         let label = document.createElement("H"+(indent<6?indent:6));
-        label.innerHTML=capitalize(val.key)+":";
+        label.innerHTML=capitalize(val.key)+(index?" "+index:"")+":";
 
         let div = document.createElement("div");
         let value;
         if (val.data instanceof Array) {
-            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},val.key,path);
+            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},path);
+            value[0].style.display="none";
+            label.appendChild(expandBtn());
             div.className="array";
         } else if (val.data instanceof Object && !(val.data instanceof File)) {
-            value=form.objectHolder({object:val.data,index:val.index},val.key,path);
+            value=form.objectHolder({object:val.data,index:val.index},path);
             div.className="object";
         } else {
             value = form.valueHolder(val,path);
             div.history = [val.data];
             div.className=val.type;
         };
-        label.innerHTML=capitalize(val.key)+(index?" "+index:"")+":";
         div.appendChild(label);
         value.forEach(elem => div.appendChild(elem));
         return div;
@@ -305,6 +325,9 @@ var form = {
         if (type == "file") {
             if (key == "video") {
                 value=document.createElement("VIDEO");
+                value.onerror = e => {
+                    e.target.src="";
+                };
                 value.src=URL.createObjectURL(data);value.controls=true;
             } else if (key == "thumbnail") {
                 value=document.createElement("IMG");
@@ -313,7 +336,7 @@ var form = {
             blobs.push(value.src);
         } else if (type == "text") {
             value=document.createElement("SPAN");
-            value.innerHTML=data;
+            value.innerHTML=data.replaceAll("\n","<br>");
         } else if (type == "number") {
             value=document.createElement("SPAN");
             value.innerHTML=data;
@@ -436,7 +459,7 @@ function infoBtn() {
         form.open=true;
     });
     return button;
-}
+};blobs
 
 function unselect(elem) {
     elem.style.backgroundColor="";
@@ -470,6 +493,6 @@ function fetchLessons(cb) {
 function fetchContests(cb) {
     //apireq("get",{target:"contests"},cb);
     cb({elements:[
-        {"id":"1","title":"The Unnamed Contest","thumbnail":"public/pictures/contest1.png","questions":"public/questions/contest1.json"}
+        {"id":"1","title":"The Unnamed Contest","thumbnail":"public/pictures/contest1.png","questions":[{"quest":"",options:[]}]}
     ]});
 };
