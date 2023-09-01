@@ -12,6 +12,26 @@ function loadingImg() {
 window.onload = () => {
     app=document.getElementById("app");
     addLoading(app);
+    let formFiles=Object.values(form.defaults.file);
+    let formKeys=Object.keys(form.defaults.file);
+    let preload=["types.json",...formFiles];
+    load(preload,(id,data,isFinal) => {
+        let reader=new FileReader();
+        let filename=preload[id];
+        let file=new File([data],filename);
+        reader.readAsText(file);
+        reader.addEventListener("load",() => {
+            if (id == 0) {
+                console.log(reader.result)
+                types=JSON.parse(reader.result);
+            } else {
+                form.defaults.file[formKeys[formFiles.indexOf(filename)]]=file;
+            };
+            if (isFinal) {
+                init();
+            };
+        },false);
+    });
     fetch("types.json")
     .then(res => {if (res.ok) return res.json();})
     .then(data => {types=data;init()});
@@ -173,12 +193,8 @@ var form = {
         "number":"0",
         "text":"Enter text",
         "file":{
-            "image":(
-                new File([""],"file")
-            ),
-            "video":(
-                new File([""],"file")
-            )
+            "image":"blank.png",
+            "video":"blank.mp4"
         }
     },
     prompt: ({type,path,key,target},title) => {
@@ -324,20 +340,21 @@ var form = {
         let value;
         if (type == "file") {
             if (key == "video") {
+                if (!data) data=form.defaults.file.video;
                 value=document.createElement("VIDEO");
-                value.onerror = e => {
-                    e.target.src="";
-                };
                 value.src=URL.createObjectURL(data);value.controls=true;
             } else if (key == "thumbnail") {
+                if (!data) data=form.defaults.file.image;
                 value=document.createElement("IMG");
                 value.src=URL.createObjectURL(data);
             };
             blobs.push(value.src);
         } else if (type == "text") {
+            if (!data) data=form.defaults.text;
             value=document.createElement("SPAN");
             value.innerHTML=data.replaceAll("\n","<br>");
         } else if (type == "number") {
+            if (!data) data=form.defaults.number;
             value=document.createElement("SPAN");
             value.innerHTML=data;
             
@@ -375,11 +392,11 @@ const markCb = data => {
         if (fileUrls.length == 0) {
             removeLoading(app);
         };
-        load(fileUrls,(id,buffer)=>{
+        load(fileUrls,(id,data,isFinal)=>{
             let key = fileKeys[id];
             let fileName=element[key].split("/").pop();
-            element[key]=new File([buffer],fileName);
-            if (id == fileKeys.length-1 && elements.indexOf(element) == elements.length-1) {
+            element[key]=new File([data],fileName);
+            if (isFinal && elements.indexOf(element) == elements.length-1) {
                 removeLoading(app);
             };
         });
@@ -395,7 +412,7 @@ function load(files,perCb) {
     files.forEach(file => {
         fetch(file)
         .then(res=>res.arrayBuffer())
-        .then(data=>perCb(files.indexOf(file),data));
+        .then(data=>perCb(files.indexOf(file),data,file==files[files.length-1]));
     });
 }
 var marked;
