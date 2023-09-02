@@ -22,7 +22,6 @@ window.onload = () => {
         reader.readAsText(file);
         reader.addEventListener("load",() => {
             if (id == 0) {
-                console.log(reader.result)
                 types=JSON.parse(reader.result);
             } else {
                 form.defaults.file[formKeys[formFiles.indexOf(filename)]]=file;
@@ -84,27 +83,26 @@ function apireq(command,data,cb) {
 var sections = new Array(...document.getElementById("navbar")
                 .children).map(e => e.innerHTML);
 
-var marked;
+var markedId;
 
-function listElem(props) {
+function listElem(title,id) {
     let div = document.createElement("DIV");
     div.className="elem";
-    div.id=props.id;
+    div.id=id;
     div.addEventListener("click",e => {
         let elem=e.target;
         if (elem.id == selectedElemId) {
             unselect(elem);
         } else {
             if (selectedElemId != null)  {
-                unselect(document.getElementById("list").children[selectedElemId]);
+                unselect(document.getElementById("list").querySelectorAll(".elem")[selectedElemId]);
             };
             select(elem);
-            selectedElemId=elem.id;
         };
     });
     let span=document.createElement("SPAN");
     span.className="title";
-    span.innerHTML=props.name || props.title;
+    span.innerHTML=title;
     div.appendChild(span);
     return div;
 };
@@ -114,6 +112,22 @@ function list() {
     div.id="list";
     let h2=document.createElement("H2");
     h2.innerHTML="Elements";
+    let add = document.createElement("BUTTON");
+    add.id="add";
+    add.onclick = e => {
+        let obj={};
+        form.keys[markedId].forEach(key=>obj[key]=undefined);
+        let elem = listElem("[empty]",elements.length);
+        let list=document.getElementById("list");
+        list.appendChild(elem);
+        elem.classList.add("empty");
+        if (selectedElemId)
+            unselect(list.querySelectorAll(".elem")[selectedElemId]);
+        select(elem);
+        elements.push(obj);
+        elem.querySelector(".info").click();
+    };
+    h2.appendChild(add);
     div.appendChild(h2);
     return div;
 };
@@ -147,11 +161,6 @@ function capitalize(s) {
 }
 
 const br=document.createElement("BR");
-
-const arrayKeys = {
-    "questions":"question",
-    "options":"option"
-};
 
 const errorDesc = {
     0:"Cannot connect to the server"
@@ -188,7 +197,23 @@ function expandBtn() {
     return expand;
 }
 
+const arrayKeys = {
+    "questions":"question",
+    "options":"option",
+    "finishedLessons":"lesson",
+    "takenContests":"contest"
+};
+
+const objectKeys = {
+    "question":["quest","options"],
+};
+
 var form = {
+    keys: [
+        ["title", "thumbnail", "video", "questions" ],
+        ["title", "thumbnail", "questions" ],
+        ["name", "mail", "points", "finishedLessons", "takenContests" ]
+    ],
     defaults: {
         "number":"0",
         "text":"Enter text",
@@ -258,6 +283,7 @@ var form = {
     },
     arrayHolder: ({array,key},path) => {
         let list=document.createElement("OL");
+        if (!array) array=[];
         array.forEach(elem => {
             let ind=array.indexOf(elem).toString();
             let childPath=[...path,ind];
@@ -269,7 +295,6 @@ var form = {
         return [list];
     },
     objectHolder: ({object},path) => {
-        //console.log(path);
         let obj=document.createElement("UL");
         Object.keys(object).forEach(key => {
             let childPath = [...path,key];
@@ -289,12 +314,12 @@ var form = {
 
         let div = document.createElement("div");
         let value;
-        if (val.data instanceof Array) {
+        if (Object.keys(arrayKeys).includes(val.key)) {
             value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},path);
             value[0].style.display="none";
             label.appendChild(expandBtn());
             div.className="array";
-        } else if (val.data instanceof Object && !(val.data instanceof File)) {
+        } else if (Object.keys(objectKeys).includes(val.key)) {
             value=form.objectHolder({object:val.data,index:val.index},path);
             div.className="object";
         } else {
@@ -316,8 +341,10 @@ var form = {
         button.disabled=true;
         button.onclick=() => {
             addLoading(document.getElementById("form"));
+            let isNew=document.getElementById("list").querySelectorAll(".elem")[selectedElemId].classList.contains("empty");
             apireq("set",{target:{
-                type:marked.innerHTML.toLowerCase(),id:selectedElemId
+                type:document.getElementById("navbar").children[markedId].innerHTML.toLowerCase(),
+                id:isNew?undefined:selectedElemId
             },data},res => {
                 if (res.success) {
                     elements[selectedElemId]=form.modified;
@@ -403,7 +430,7 @@ const markCb = data => {
         elements[ind]=element;
     });
     app.querySelector("#body").appendChild(list());
-    elements.map(e => listElem(e)).forEach(e => {
+    elements.map(e => listElem(e.title||e.name,elements.indexOf(e))).forEach(e => {
         document.getElementById("list").appendChild(e);
     });
 };
@@ -415,9 +442,11 @@ function load(files,perCb) {
         .then(data=>perCb(files.indexOf(file),data,file==files[files.length-1]));
     });
 }
-var marked;
+
+var sections=document.getElementById("navbar").children;
+
 function mark(i) {
-    if (marked) {
+    if (markedId!=null) {
         unmark();
     };
     if (i == 0) {
@@ -427,21 +456,21 @@ function mark(i) {
     } else {
         fetchUsers(markCb);
     }
-    marked=app.querySelector("#navbar").children[i];
-    marked.disabled=true;
+    markedId=i;
+    sections[markedId].disabled=true;
 };
 
 function unmark() {
     if (selectedElemId)
-        unselect(document.getElementById("list").children[selectedElemId])
+        unselect(document.getElementById("list").querySelectorAll(".elem")[selectedElemId])
     document.getElementById("list").remove();
     blobs.forEach(blobURL => {
         URL.revokeObjectURL(blobURL);
     });
     blobs=[];
     form.remove();
-    marked.disabled=false;
-    marked=null;
+    sections[markedId].disabled=false;
+    markedId=null;
 };
 
 var selectedElemId=null;
@@ -461,11 +490,12 @@ function infoBtn() {
     button.classList.add("info");
     button.addEventListener("click",e => {
         e.stopPropagation();
-        if (form.open) return;
-        let obj = elements.filter(e=> e.id==selectedElem.id)[0]
+        if (form.open) form.remove();
+        form.open=true;
+        let obj = elements[selectedElemId];
         form.modified=obj;
         app.querySelector("#body").appendChild(form.new({
-            values:Object.keys(obj).slice(1).map(key => {
+            values:Object.keys(obj).map(key => {
                 return {
                     data:obj[key],
                     type:type(key),
@@ -473,22 +503,25 @@ function infoBtn() {
                 };
             })
         }));
-        form.open=true;
     });
     return button;
-};blobs
+};
 
 function unselect(elem) {
     elem.style.backgroundColor="";
     elem.querySelector(".info").remove();
     form.remove();
+    if (elem.classList.contains("empty")) {
+        elem.remove();
+        elements.pop();
+    };
     selectedElemId=null;
 };
 
 function select(elem) {
     elem.style.backgroundColor="gray";
     elem.appendChild(infoBtn());
-    selectedElem=elem;
+    selectedElemId=elem.id;
 };
 
 function fetchUsers(cb) {

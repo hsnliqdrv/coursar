@@ -34,6 +34,7 @@
     overflow:scroll;
     padding: 5px;
 }
+
 #list .elem .title {
     pointer-events:none;
     user-select: none;
@@ -74,7 +75,7 @@
     transform: translate(-50%,-50%);
     position: absolute;
 }
-.undo,.change,.close,.expand {
+.undo,.change,.close,.expand,#list #add {
     display: inline;
     margin-left:5px;
     background-size:cover;
@@ -84,11 +85,10 @@
     border-style:none;
 }
 
-.undo,.change,.expand {
+.undo,.change,.expand,#list #add {
     vertical-align:middle;
 }
-
-.expand:hover {
+.undo:hover,.change:hover,.expand:hover,.close:hover,#list #add:hover {
     background-color: gray;
 }
 
@@ -97,24 +97,17 @@
     display: block;
     background-image: url("close_btn.png");
 }
-.close:hover {
-    background-color:gray;
+
+#list #add {
+    background-image:url("add_btn.png")
 }
 
 .change {
     background-image:url("edit_btn.png");
 }
 
-.change:hover {
-    background-color:gray
-}
-
 .undo {
     background-image:url("undo_btn.png");
-}
-
-.undo:hover {
-    background-color:gray
 }
 
 #popup :not(.close) {
