@@ -144,14 +144,17 @@ exports.contests = {
 };
 const saveFileUsers="./admin/users.json";
 exports.users = {
-    get: id => {
+    get: (id=-1) => {
         let users=require(saveFileUsers);
-        let user=users.filter(i => i.id == id)[0];
-        if (user) {
-            return user;
+        if (id==-1) {
+            return users;
         } else {
-            return false;
-        }
+            let user=users.filter(i => i.id == id);
+            if (user.length==0) {
+                return false;
+            };
+            return user;
+        };
     },
     set: (id=-1,{name,mail,keyHash,points,finishedLessons,takenContests}) => { 
         let data;

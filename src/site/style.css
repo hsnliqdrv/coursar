@@ -75,7 +75,7 @@
     transform: translate(-50%,-50%);
     position: absolute;
 }
-.undo,.change,.close,.expand,#list #add {
+.undo,.change,.close,.expand,.add {
     display: inline;
     margin-left:5px;
     background-size:cover;
@@ -85,10 +85,10 @@
     border-style:none;
 }
 
-.undo,.change,.expand,#list #add {
+.undo,.change,.expand,.add {
     vertical-align:middle;
 }
-.undo:hover,.change:hover,.expand:hover,.close:hover,#list #add:hover {
+.undo:hover,.change:hover,.expand:hover,.close:hover,.add:hover {
     background-color: gray;
 }
 
@@ -98,7 +98,7 @@
     background-image: url("close_btn.png");
 }
 
-#list #add {
+.add {
     background-image:url("add_btn.png")
 }
 
@@ -152,7 +152,7 @@
     border: 1px solid black;
 }
 
-#form ul,ol {
+#form ul {
     list-style-type: none;
     text-align:left;
 }

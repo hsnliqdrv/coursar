@@ -112,22 +112,7 @@ function list() {
     div.id="list";
     let h2=document.createElement("H2");
     h2.innerHTML="Elements";
-    let add = document.createElement("BUTTON");
-    add.id="add";
-    add.onclick = e => {
-        let obj={};
-        form.keys[markedId].forEach(key=>obj[key]=undefined);
-        let elem = listElem("[empty]",elements.length);
-        let list=document.getElementById("list");
-        list.appendChild(elem);
-        elem.classList.add("empty");
-        if (selectedElemId)
-            unselect(list.querySelectorAll(".elem")[selectedElemId]);
-        select(elem);
-        elements.push(obj);
-        elem.querySelector(".info").click();
-    };
-    h2.appendChild(add);
+    h2.appendChild(addBtn());
     div.appendChild(h2);
     return div;
 };
@@ -195,7 +180,39 @@ function expandBtn() {
         };
     };
     return expand;
-}
+};
+
+function addBtn() {
+    let add = document.createElement("BUTTON");
+    add.className="add";
+    add.onclick = e => {
+        if (e.target.parentNode.parentNode.id=="list") {
+            let obj={};
+            form.keys[markedId].forEach(key=>obj[key]=undefined);
+            let elem = listElem("[empty]",elements.length);
+            let list=document.getElementById("list");
+            list.appendChild(elem);
+            elem.classList.add("empty");
+            if (selectedElemId)
+                unselect(list.querySelectorAll(".elem")[selectedElemId]);
+            select(elem);
+            elements.push(obj);
+            elem.querySelector(".info").click();
+        } else {
+            let label = e.target.parentNode;
+            let arrayList=label.nextSibling;
+            let path=[...arrayList.parentNode.path];
+            let key=arrayKeys[path[path.length-1]];
+            let ind=arrayList.children.length.toString();
+            path.push(ind);
+            arrayList.appendChild(form.holder({key},path));
+            if (arrayList.style.display == "none") {
+                label.querySelector(".expand").click();
+            }
+        };
+    };
+    return add;
+};
 
 const arrayKeys = {
     "questions":"question",
@@ -207,6 +224,8 @@ const arrayKeys = {
 const objectKeys = {
     "question":["quest","options"],
 };
+
+const targetTypes=["lessons","contests","users"];
 
 var form = {
     keys: [
@@ -282,8 +301,7 @@ var form = {
         return [value,change,undo];
     },
     arrayHolder: ({array,key},path) => {
-        let list=document.createElement("OL");
-        if (!array) array=[];
+        let list=document.createElement("UL");
         array.forEach(elem => {
             let ind=array.indexOf(elem).toString();
             let childPath=[...path,ind];
@@ -313,20 +331,31 @@ var form = {
         label.innerHTML=capitalize(val.key)+(index?" "+index:"")+":";
 
         let div = document.createElement("div");
+        div.path=path;
         let value;
-        if (Object.keys(arrayKeys).includes(val.key)) {
-            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key],index:val.index},path);
+        val.type=type(val.key);
+        if (val.type=="object") {
+            if (!val.data) {
+                val.data={};
+                objectKeys[val.key].forEach(key => {
+                    val.data[key]=undefined;
+                });
+            };
+            value=form.objectHolder({object:val.data},path);
+        } else if (val.type=="array") {
+            if (!val.data) {
+                val.data=[];
+            };
+            value=form.arrayHolder({array:val.data,key:arrayKeys[val.key]},path);
             value[0].style.display="none";
             label.appendChild(expandBtn());
-            div.className="array";
-        } else if (Object.keys(objectKeys).includes(val.key)) {
-            value=form.objectHolder({object:val.data,index:val.index},path);
-            div.className="object";
+            label.appendChild(addBtn());
         } else {
             value = form.valueHolder(val,path);
             div.history = [val.data];
-            div.className=val.type;
         };
+        div.className=val.type;
+
         div.appendChild(label);
         value.forEach(elem => div.appendChild(elem));
         return div;
@@ -343,11 +372,15 @@ var form = {
             addLoading(document.getElementById("form"));
             let isNew=document.getElementById("list").querySelectorAll(".elem")[selectedElemId].classList.contains("empty");
             apireq("set",{target:{
-                type:document.getElementById("navbar").children[markedId].innerHTML.toLowerCase(),
+                type:targetTypes[markedId],
                 id:isNew?undefined:selectedElemId
             },data},res => {
                 if (res.success) {
                     elements[selectedElemId]=form.modified;
+                    app.querySelector("#body").replaceChild(list(),document.getElementById("list"))
+                    elements.map(e => listElem(e.title||e.name,elements.indexOf(e))).forEach(e => {
+                        document.getElementById("list").appendChild(e);
+                    });
                 } else {
                     showError(res.errorCode);
                 };
@@ -481,9 +514,14 @@ function type(_key) {
         if (types[key].includes(_key)) {
             return key;
         }
+    };
+    if (objectKeys[_key]) {
+        return "object";
+    } else if (arrayKeys[_key]) {
+        return "array";
     }
     return null;
-}
+};
 
 function infoBtn() {
     let button = document.createElement("button");
@@ -533,16 +571,16 @@ function fetchUsers(cb) {
 function fetchLessons(cb) {
     //apireq("get",{target:"lessons"},cb);
     let obj=[{"quest":"What's your name?","options":["Jack","Jay","John"]},{"quest":"What's your name?","options":["Jack","Jay","John"]}];
-    cb({elements:[{"id":"1","title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
+    cb({elements:[{"title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
     "video":"public/video/lesson1.mp4",
     "questions":obj},
-    {"id":"2","title":"The First Lesson","thumbnail":"https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072821_960_720.jpg",
+    {"title":"The First Lesson","thumbnail":"https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072821_960_720.jpg",
     "video":"public/video/lesson1.mp4",
     "questions":obj}]});
 };
 function fetchContests(cb) {
     //apireq("get",{target:"contests"},cb);
     cb({elements:[
-        {"id":"1","title":"The Unnamed Contest","thumbnail":"public/pictures/contest1.png","questions":[{"quest":"",options:[]}]}
+        {"title":"The Unnamed Contest","thumbnail":"public/pictures/contest1.png","questions":[{"quest":"",options:[]}]}
     ]});
 };
