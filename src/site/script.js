@@ -205,10 +205,13 @@ function addBtn() {
             let key=arrayKeys[path[path.length-1]];
             let ind=arrayList.children.length.toString();
             path.push(ind);
-            arrayList.appendChild(form.holder({key},path));
+            let child=form.holder({key},path);
+            arrayList.appendChild(child);
             if (arrayList.style.display == "none") {
                 label.querySelector(".expand").click();
-            }
+            };
+            nestedSet(form.modified,path,child.data);
+            child.data=null;
         };
     };
     return add;
@@ -268,6 +271,8 @@ var form = {
 
             target.history.push(data);
 
+            target.classList.remove("empty");
+
             form.modified=nestedSet(form.modified,path,data);
 
             document.getElementById("submit").disabled=false;
@@ -276,6 +281,7 @@ var form = {
         };
         openPopup([input,br,button],capitalize(title));
     },
+    modified:"",
     valueHolder: ({data,type,key},path) => {
         let value=form.valueElem({data,type,key});
         let undo = document.createElement("BUTTON");
@@ -290,6 +296,9 @@ var form = {
                 par.history=par.history.slice(0,len-1);
                 if (len == 2) {
                     undo.style.display="none";
+                    if (!prev) {
+                        par.classList.add("empty");
+                    }
                 };
             };
             undo.style.display="none";
@@ -334,18 +343,15 @@ var form = {
         div.path=path;
         let value;
         val.type=type(val.key);
-        if (val.type=="object") {
-            if (!val.data) {
-                val.data={};
-                objectKeys[val.key].forEach(key => {
-                    val.data[key]=undefined;
-                });
+        if (!val.data) {
+            val.data=data(val.key);
+            if (!(["array","object"].includes(val.type))) {
+                div.classList.add("empty");
             };
+        };
+        if (val.type=="object") {
             value=form.objectHolder({object:val.data},path);
         } else if (val.type=="array") {
-            if (!val.data) {
-                val.data=[];
-            };
             value=form.arrayHolder({array:val.data,key:arrayKeys[val.key]},path);
             value[0].style.display="none";
             label.appendChild(expandBtn());
@@ -354,7 +360,8 @@ var form = {
             value = form.valueHolder(val,path);
             div.history = [val.data];
         };
-        div.className=val.type;
+        div.data=val.data;
+        div.classList.add(val.type);
 
         div.appendChild(label);
         value.forEach(elem => div.appendChild(elem));
@@ -427,6 +434,19 @@ var form = {
     }
 };
 
+function data(key) {
+    let data_;
+    let type_=type(key);
+    if (type_=="object") {
+        data_={};
+        objectKeys[key].forEach(key => {
+            data_[key]=data(key);
+        });
+    } else if (type_=="array") {
+        data_=[];
+    }
+    return data_;
+};
 
 function nestedSet(obj,path,value) {
     
@@ -436,7 +456,7 @@ function nestedSet(obj,path,value) {
         obj[path[0]]=nestedSet(obj[path[0]],path.slice(1),value);
     };
     return obj;
-}
+};
 
 prompt=form.prompt;
 
@@ -531,7 +551,7 @@ function infoBtn() {
         if (form.open) form.remove();
         form.open=true;
         let obj = elements[selectedElemId];
-        form.modified=obj;
+        form.modified=new Object(obj);
         app.querySelector("#body").appendChild(form.new({
             values:Object.keys(obj).map(key => {
                 return {
