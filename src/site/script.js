@@ -584,24 +584,11 @@ function select(elem) {
 };
 
 function fetchUsers(cb) {
-    //apireq("get",{target:"users"},cb);
-    cb({elements:[{"id":"1", "name":"First User","mail":"firstuser001@gmail.com","points":"0",
-    "finishedLessons":[],"takenContests":[]
-    }]});
+    apireq("get",{target:"users"},cb);
 };
 function fetchLessons(cb) {
-    //apireq("get",{target:"lessons"},cb);
-    let obj=[{"quest":"What's your name?","options":["Jack","Jay","John"]},{"quest":"What's your name?","options":["Jack","Jay","John"]}];
-    cb({elements:[{"title":"The First Lesson","thumbnail":"public/pictures/lesson1.png",
-    "video":"public/video/lesson1.mp4",
-    "questions":obj},
-    {"title":"The First Lesson","thumbnail":"https://cdn.pixabay.com/photo/2015/12/01/20/28/road-1072821_960_720.jpg",
-    "video":"public/video/lesson1.mp4",
-    "questions":obj}]});
+    apireq("get",{target:"lessons"},cb);
 };
 function fetchContests(cb) {
-    //apireq("get",{target:"contests"},cb);
-    cb({elements:[
-        {"title":"The Unnamed Contest","thumbnail":"public/pictures/contest1.png","questions":[{"quest":"",options:[]}]}
-    ]});
+    apireq("get",{target:"contests"},cb);
 };
