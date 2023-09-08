@@ -188,7 +188,7 @@ function addBtn() {
     add.onclick = e => {
         if (e.target.parentNode.parentNode.id=="list") {
             let obj={};
-            form.keys[markedId].forEach(key=>obj[key]=undefined);
+            form.keys[markedId].forEach(key=>obj[key]=data(key));
             let elem = listElem("[empty]",elements.length);
             let list=document.getElementById("list");
             list.appendChild(elem);
@@ -210,6 +210,7 @@ function addBtn() {
             if (arrayList.style.display == "none") {
                 label.querySelector(".expand").click();
             };
+            console.log(path,child.data)
             nestedSet(form.modified,path,child.data);
             child.data=null;
         };
