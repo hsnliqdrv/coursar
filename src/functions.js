@@ -149,10 +149,7 @@ exports.users = {
         if (id==-1) {
             return users;
         } else {
-            let user=users.filter(i => i.id == id);
-            if (user.length==0) {
-                return false;
-            };
+            let user=users.filter(i => i.id == id)[0];
             return user;
         };
     },

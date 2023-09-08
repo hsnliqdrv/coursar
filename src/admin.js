@@ -26,11 +26,11 @@ app.post('/api/:command', upload.any(),(req, res) => {
     if (cmd == "get") {
         let ret;
         if (body.target.type=="lessons") {
-            ret=functions.lessons.get(body.target.id);
+            ret=functions.lessons.get();
         } else if (body.target.type=="contests") {
-            ret=functions.contests.get(body.target.id);
+            ret=functions.contests.get();
         } else if (body.target.type=="users") {
-            ret=functions.users.get(body.target.id);
+            ret=functions.users.get();
         }
         if (ret) {
             ret.success=true;
